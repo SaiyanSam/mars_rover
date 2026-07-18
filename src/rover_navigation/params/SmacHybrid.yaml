@@ -1,0 +1,49 @@
+planner_server:
+  ros__parameters:
+    planner_plugins: ["GridBased"]
+    use_sim_time: true
+
+    GridBased:
+      plugin: "nav2_smac_planner::SmacPlannerHybrid"
+      tolerance: 0.15 
+      downsample_costmap: false 
+      downsampling_factor: 1 
+      allow_unknown: true 
+      max_iterations: 1000000 
+      max_on_approach_iterations: 1000 
+      terminal_checking_interval: 5000 
+      max_planning_time: 3.5 
+      
+      motion_model_for_search: "REEDS_SHEPP" 
+      
+      change_penalty: 1.5         
+      
+      reverse_penalty: 2.5         
+      
+      non_straight_penalty: 1.2    
+      
+      minimum_turning_radius: 0.40
+      
+      cost_travel_multiplier: 2.0 
+      angle_quantization_bins: 64 
+      analytic_expansion_ratio: 3.5 
+      
+      analytic_expansion_max_length: 2.0 
+      analytic_expansion_max_cost: 200.0 
+      analytic_expansion_max_cost_override: false 
+      cost_penalty: 2.5 
+      retrospective_penalty: 0.025 
+      rotation_penalty: 5.0 
+      lookup_table_size: 20.0 
+      cache_obstacle_heuristic: true 
+      allow_reverse_expansion: false 
+      smooth_path: true 
+      
+      debug_visualizations: false 
+      
+      smoother:
+        max_iterations: 1000
+        w_smooth: 0.3
+        w_data: 0.2
+        tolerance: 1.0e-10
+        do_refinement: true

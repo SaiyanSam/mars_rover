@@ -1,0 +1,185 @@
+ekf_filter_node:
+  ros__parameters:
+    qos_overrides./odom.publisher.reliability: reliable
+    qos_overrides./accel.publisher.reliability: reliable
+
+    frequency: 35.0
+    sensor_timeout: 0.2
+    use_sim_time: true
+
+    two_d_mode: true
+
+    # Tight timing offsets to maintain synchronization with Gazebo physics
+    transform_time_offset: 0.0
+    transform_timeout: 0.1            # Slightly increased from 0.0 to prevent tf cache drops
+
+    print_diagnostics: true
+    debug: false
+
+    permit_corrected_publication: false
+    publish_acceleration: false        # Turned off unless explicitly required by control nodes
+    publish_tf: true
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_link
+    world_frame: odom
+
+    odom0: /odom_rgbd
+
+    # ==========================================================
+    # TODO 1 — Select Wheel Odometry Measurements
+    #
+    # Parameter:
+    #   odom0_config
+    #
+    # Controls:
+    #   Specifies which measurements from the wheel odometry
+    #   are fused by the Extended Kalman Filter (EKF).
+    #
+    # Each value is either:
+    #   true  → Use this measurement
+    #   false → Ignore this measurement
+    #
+    # Order of the 15 values:
+    #
+    # [ x, y, z,
+    #   roll, pitch, yaw,
+    #   vx, vy, vz,
+    #   vroll, vpitch, vyaw,
+    #   ax, ay, az ]
+    #
+    # Example:
+    #
+    # [false, false, false,
+    #  false, false, false,
+    #  true,  false, false,
+    #  false, false, false,
+    #  false, false, false]
+    #
+    # This configuration tells the EKF to use only the
+    # forward linear velocity (vx) from wheel odometry.
+    #
+    # Why tune this?
+    # The EKF combines measurements from multiple sensors to
+    # estimate the rover's state. Choosing which wheel odometry
+    # measurements to fuse determines how much the filter relies
+    # on this sensor for estimating position, orientation and
+    # velocity. Selecting appropriate measurements can improve
+    # localization accuracy and reduce the effect of noisy data.
+    #
+    # Experiment:
+    # Try enabling additional measurements (such as x or y)
+    # and observe how the rover's estimated pose changes.
+    # ==========================================================
+
+    odom0_config: [
+      true,  true,  false,
+      false, false, true,
+      true,  false, false,
+      false, false, true,
+      false, false, false
+    ]
+    odom0_differential: false
+    odom0_relative: false
+
+    # IMU gives heading + angular rates
+    imu0: /imu
+    # ==========================================================
+    # TODO 2 — Select IMU Measurements
+    #
+    # Parameter:
+    #   imu0_config
+    #
+    # Controls:
+    #   Specifies which IMU measurements are fused by the EKF.
+    #
+    # Each value is either:
+    #   true  → Use this measurement
+    #   false → Ignore this measurement
+    #
+    # Order of the 15 values:
+    #
+    # [ x, y, z,
+    #   roll, pitch, yaw,
+    #   vx, vy, vz,
+    #   vroll, vpitch, vyaw,
+    #   ax, ay, az ]
+    #
+    # Example:
+    #
+    # [false, false, false,
+    #  false, false, true,
+    #  false, false, false,
+    #  true,  true,  true,
+    #  false, false, false]
+    #
+    # This configuration fuses:
+    # • Yaw orientation
+    # • Roll, pitch and yaw angular velocities
+    #
+    # while ignoring position, linear velocity and
+    # acceleration measurements from the IMU.
+    #
+    # Why tune this?
+    # The IMU provides orientation, angular velocity and
+    # acceleration information. Selecting which of these
+    # measurements are fused determines how the EKF estimates
+    # the rover's motion. Using only reliable measurements can
+    # improve localization accuracy while reducing the influence
+    # of sensor noise or drift.
+    #
+    # Experiment:
+    # Try enabling or disabling yaw or angular velocity
+    # measurements and compare the localization results
+    # in RViz.
+    # ==========================================================
+
+    imu0_config: [
+      false, false, false,
+      false, false, true,
+      false, false, false,
+      false, false, true,
+      false, false, false
+    ]
+    imu0_differential: false
+    imu0_relative: false
+    imu0_remove_gravitational_acceleration: false  # not needed, ax/ay disabled # <-- CRITICAL: Keeps the IMU from introducing false forward acceleration when the rover pitches on rough terrain
+
+    process_noise_covariance:
+      [
+        0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.06, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.06, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.025,0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.025,0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.04, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.02, 0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.015,
+      ]
+
+    initial_estimate_covariance:
+      [
+        1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9,
+      ]
