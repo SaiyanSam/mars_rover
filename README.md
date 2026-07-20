@@ -46,10 +46,11 @@ ros2 run rover_exploration visual_rock_explorer_node \
   -p backtrack_linear_speed:=-0.06 \  
   -p backtrack_angular_speed:=0.35 \  
   -p backtrack_cooldown_sec:=4.0 \  
-  -p draw_depth_sectors:=false \  
+  -p draw_depth_sectors:=false \
+  -p output_dir:=captured_images
 ```
 
 
 
 
-  -p output_dir:=captured_images
+
